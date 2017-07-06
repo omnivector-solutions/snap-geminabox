@@ -11,4 +11,4 @@ export GEM_PATH=$RUBYDIR/gems/2.3.0
 
 [ -d $SNAP_COMMON/geminabox/data ] || mkdir -p $SNAP_COMMON/geminabox/data
 
-exec "$SNAP/bin/rackup" --host 0.0.0.0 -p 9200 "$@"
+exec "$SNAP/bin/rackup" --host 0.0.0.0 "$SNAP/config.ru" "$@"
