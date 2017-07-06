@@ -1,4 +1,5 @@
 # Geminabox Snap
+[![Snap Status](https://build.snapcraft.io/badge/jamesbeedy/geminabox-snap.svg)](https://build.snapcraft.io/user/jamesbeedy/geminabox-snap)
 
 Gem hosting utility. Find out more at [geminabox-github-repo](https://github.com/geminabox/geminabox).
 
