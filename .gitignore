@@ -1,4 +1,5 @@
 snap/plugins/__pycache__
+snap/.snapcraft/
 geminabox_*.snap
 parts/
 prime/

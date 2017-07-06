@@ -2,7 +2,7 @@
 
 Gem hosting utility. Find out more at [geminabox-github-repo](https://github.com/geminabox/geminabox).
 
-To snap this repo:
+To snap this geminabox:
 ```bash
 $ git clone git@github.com:jamesbeedy/geminabox-snap.git
 
