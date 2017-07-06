@@ -1,0 +1,17 @@
+#!/bin/sh
+export PATH="$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SNAP/lib"
+LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib/$(uname -p)-linux-gnu/:$LD_LIBRARY_PATH
+
+export RUBYDIR=$SNAP/lib/ruby
+export RUBYLIB=$RUBYDIR/2.3.0
+RUBYLIB=$RUBYLIB/x86_64-linux/:$RUBYLIB
+export GEM_HOME=$RUBYDIR/gems/2.3.0
+export GEM_PATH=$RUBYDIR/gems/2.3.0
+
+
+export LD_LIBRARY_PATH=$SNAP_LIBRARY_PATH:$LD_LIBRARY_PATH
+
+[ -d $SNAP_COMMON/geminabox/data ] || mkdir $SNAP_COMMON/geminabox/data
+
+exec "$SNAP/bin/rackup" --host 0.0.0.0 -p 9200 "$@"
