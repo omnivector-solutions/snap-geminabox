@@ -2,7 +2,7 @@
 
 Gem hosting utility. Find out more at [geminabox-github-repo](https://github.com/geminabox/geminabox).
 
-To snap this geminabox:
+To build this geminabox snap:
 ```bash
 $ git clone git@github.com:jamesbeedy/geminabox-snap.git
 
@@ -18,9 +18,9 @@ $ snap install geminabox_[version]_[arch].snap --devmode
 
 Following these steps, you should be able to access geminabox at http://youripaddress:9292
 
-# Copyright
+### Copyright
 * Copyright (c) 2017 James Beedy <jamesbeedy@gmail.com>
 
-# Contact
+### Contact
 * James Beedy jamesbeedy@gmail.com
 
