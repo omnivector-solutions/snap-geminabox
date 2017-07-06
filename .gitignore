@@ -1,1 +1,5 @@
 snap/plugins/__pycache__
+geminabox_*.snap
+parts/
+prime/
+stage/
