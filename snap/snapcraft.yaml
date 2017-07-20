@@ -10,11 +10,12 @@ confinement: devmode
 apps:
   geminabox:
     daemon: simple
-    command: bin/geminabox
+    command: wrappers/geminabox
 parts:
   geminabox:
+    after: [wrappers]
     plugin: ruby
-    ruby-version: "2.3.1"
+    ruby-version: "2.4.0"
     gems: [geminabox]
     stage:
       - bin
@@ -26,7 +27,6 @@ parts:
       - config.ru
     install: |
       cp config.ru $SNAPCRAFT_PART_INSTALL/config.ru
-      cp geminabox $SNAPCRAFT_PART_INSTALL/bin/geminabox
-  dump:
+  wrappers:
     plugin: dump
-    source: .
+    source: snap/
