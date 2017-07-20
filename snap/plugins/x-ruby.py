@@ -27,12 +27,10 @@ Additionally, this plugin uses the following plugin-specific keywords:
       (string)
       The version of ruby you want this snap to run.
 """
+import os
 import re
-
-from os import makedirs, environ
-from os.path import exists, join
-
 import platform
+
 from snapcraft import BasePlugin
 from snapcraft.sources import Tar
 
@@ -62,24 +60,18 @@ class RubyPlugin(BasePlugin):
     def get_pull_properties(cls):
         # Inform Snapcraft of the properties associated with pulling. If these
         # change in the YAML Snapcraft will consider the build step dirty.
-        return ['ruby-version']
-
-    @classmethod
-    def get_build_properties(cls):
-        # Inform Snapcraft of the properties associated with building. If these
-        # change in the YAML Snapcraft will consider the build step dirty.
-        return ['gems']
+        return ['ruby-version', 'gems']
 
     def __init__(self, name, options, project):
         super().__init__(name, options, project)
 
         self._ruby_version = self.options.ruby_version
-        self._ruby_part_dir = join(self.partdir, 'ruby')
+        self._ruby_part_dir = os.path.join(self.partdir, 'ruby')
         self._ruby_download_url = \
             'https://cache.ruby-lang.org/pub/ruby/ruby-{}.tar.gz'.format(
                 self._ruby_version)
         self._ruby_tar = Tar(self._ruby_download_url, self._ruby_part_dir)
-        self._gems = self.options.gems
+        self._gems = self.options.gems or []
         self._install_bundler = False
 
         self.build_packages.extend(['gcc', 'g++', 'make', 'zlib1g-dev',
@@ -94,26 +86,27 @@ class RubyPlugin(BasePlugin):
 
     def pull(self):
         super().pull()
-        makedirs(self._ruby_part_dir, exist_ok=True)
+        os.makedirs(self._ruby_part_dir, exist_ok=True)
         self._ruby_tar.download()
-
-    def build(self):
-        super().build()
         self._ruby_install(builddir=self._ruby_part_dir)
         self._gem_install()
         if self._install_bundler:
             self._bundle_install()
 
     def env(self, root):
-        env = {}
-        env['PATH'] = '{}:{}'.format(join(root, 'bin'), environ['PATH'])
-        env['RUBYPATH'] = '{}'.format(join(root, 'bin'))
-        rubydir = join(root, 'lib', 'ruby')
-        rubylib = join(rubydir, self._ruby_version_dir)
-        env['RUBYLIB'] = '{}:{}'.format(rubylib,
-            join(rubylib, '{}-linux'.format(platform.machine())))
-        env['GEM_HOME'] = join(rubydir, 'gems', self._ruby_version_dir)
-        env['GEM_PATH'] = join(rubydir, 'gems', self._ruby_version_dir)
+        env = super().env(root)
+        env.append('PATH={}:{}'.format(
+            os.path.join(root, 'bin'), os.environ['PATH']))
+        env.append('RUBYPATH={}'.format(os.path.join(root, 'bin')))
+        rubydir = os.path.join(root, 'lib', 'ruby')
+        rubylib = os.path.join(rubydir, self._ruby_version_dir)
+        env.append('RUBYLIB={}:{}'.format(
+            rubylib, os.path.join(
+                rubylib, '{}-linux'.format(platform.machine()))))
+        env.append('GEM_HOME={}'.format(
+            os.path.join(rubydir, 'gems', self._ruby_version_dir)))
+        env.append('GEM_PATH={}'.format(
+            os.path.join(rubydir, 'gems', self._ruby_version_dir)))
         return env
 
     def _ruby_install(self, builddir):
@@ -127,17 +120,17 @@ class RubyPlugin(BasePlugin):
                  cwd=builddir)
 
     def _gem_install(self):
-        if exists(join(self.builddir, 'Gemfile')):
+        if os.path.exists('Gemfile'):
             self._install_bundler = True
             self._gems = self._gems + ['bundler']
         if self._gems:
-            gem_install_cmd = [join(self.installdir, 'bin', 'ruby'),
-                               join(self.installdir, 'bin', 'gem'), 'install']
-            self.run(gem_install_cmd + self._gems,
-                     env=self.env(root=self.installdir))
+            gem_install_cmd = [os.path.join(self.installdir, 'bin', 'ruby'),
+                               os.path.join(self.installdir, 'bin', 'gem'),
+                               'install']
+            self.run(gem_install_cmd + self._gems)
 
     def _bundle_install(self):
-        bundle_install_cmd = [join(self.installdir, 'bin', 'ruby'),
-                              join(self.installdir, 'bin', 'bundle'),
+        bundle_install_cmd = [os.path.join(self.installdir, 'bin', 'ruby'),
+                              os.path.join(self.installdir, 'bin', 'bundle'),
                               'install']
-        self.run(bundle_install_cmd, env=self.env(root=self.installdir))
+        self.run(bundle_install_cmd)

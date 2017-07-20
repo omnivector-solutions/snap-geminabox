@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
+set -e
 export ARCH_PATH=""
 if [ $SNAP_ARCH == "armhf" ]; then
     ARCH_PATH=armv7l-linux-eabihf
