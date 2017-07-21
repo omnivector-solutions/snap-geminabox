@@ -9,8 +9,8 @@ confinement: devmode
 
 apps:
   geminabox:
-    daemon: simple
     command: wrappers/geminabox
+    daemon: simple
 parts:
   geminabox:
     after: [wrappers]

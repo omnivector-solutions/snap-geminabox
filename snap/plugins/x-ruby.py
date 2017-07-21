@@ -23,16 +23,24 @@ Additionally, this plugin uses the following plugin-specific keywords:
     - gems:
       (list)
       A list of gems to install.
+    - use-bundler
+      (boolean)
+      Use bundler to install gems from a Gemfile (defaults 'false').
     - ruby-version:
       (string)
       The version of ruby you want this snap to run.
 """
+import logging
 import os
-import re
 import platform
+import re
 
-from snapcraft import BasePlugin
+from snapcraft import BasePlugin, file_utils
+from snapcraft.internal.errors import SnapcraftEnvironmentError
 from snapcraft.sources import Tar
+
+
+logger = logging.getLogger(__name__)
 
 
 class RubyPlugin(BasePlugin):
@@ -41,9 +49,13 @@ class RubyPlugin(BasePlugin):
     def schema(cls):
         schema = super().schema()
 
+        schema['properties']['use-bundler'] = {
+            'type': 'boolean',
+            'default': False
+        }
         schema['properties']['ruby-version'] = {
             'type': 'string',
-            'default': '2.3.1'
+            'default': '2.4.0'
         }
         schema['properties']['gems'] = {
             'type': 'array',
@@ -60,19 +72,23 @@ class RubyPlugin(BasePlugin):
     def get_pull_properties(cls):
         # Inform Snapcraft of the properties associated with pulling. If these
         # change in the YAML Snapcraft will consider the build step dirty.
-        return ['ruby-version', 'gems']
+        return ['ruby-version', 'gems', 'use-bundler']
 
     def __init__(self, name, options, project):
         super().__init__(name, options, project)
+        # Beta Warning
+        # Remove this comment and warning once ruby plugin is stable.
+        logger.warn("The ruby plugin is currently in beta, "
+                    "its API may break. Use at your own risk")
 
-        self._ruby_version = self.options.ruby_version
+        self._ruby_version = options.ruby_version
         self._ruby_part_dir = os.path.join(self.partdir, 'ruby')
         self._ruby_download_url = \
             'https://cache.ruby-lang.org/pub/ruby/ruby-{}.tar.gz'.format(
                 self._ruby_version)
         self._ruby_tar = Tar(self._ruby_download_url, self._ruby_part_dir)
-        self._gems = self.options.gems or []
-        self._install_bundler = False
+        self._gems = options.gems or []
+        self._ruby_version_dir = None
 
         self.build_packages.extend(['gcc', 'g++', 'make', 'zlib1g-dev',
                                     'libssl-dev', 'libreadline-dev'])
@@ -83,6 +99,16 @@ class RubyPlugin(BasePlugin):
             if re.compile(version_regex).match(self._ruby_version):
                 self._ruby_version_dir = version_dir
                 break
+        # Raise exception when version_dir not found
+        if not self._ruby_version_dir:
+            raise SnapcraftEnvironmentError(
+                'Ruby version dir not in version_map.')
+
+    def snap_fileset(self):
+        fileset = super().snap_fileset()
+        fileset.append('-include/')
+        fileset.append('-share/')
+        return fileset
 
     def pull(self):
         super().pull()
@@ -90,7 +116,7 @@ class RubyPlugin(BasePlugin):
         self._ruby_tar.download()
         self._ruby_install(builddir=self._ruby_part_dir)
         self._gem_install()
-        if self._install_bundler:
+        if self.options.use_bundler:
             self._bundle_install()
 
     def env(self, root):
@@ -118,15 +144,20 @@ class RubyPlugin(BasePlugin):
                  cwd=builddir)
         self.run(['make', 'install', 'DESTDIR={}'.format(self.installdir)],
                  cwd=builddir)
+        # Fix all shebangs to use the in-snap ruby
+        file_utils.replace_in_file(
+            self.installdir,
+            re.compile(r''),
+            re.compile(r'^#!.*ruby'),
+            r'#!/usr/bin/env ruby')
 
     def _gem_install(self):
-        if os.path.exists('Gemfile'):
-            self._install_bundler = True
+        if self.options.use_bundler:
             self._gems = self._gems + ['bundler']
         if self._gems:
             gem_install_cmd = [os.path.join(self.installdir, 'bin', 'ruby'),
                                os.path.join(self.installdir, 'bin', 'gem'),
-                               'install']
+                               'install', '--env-shebang']
             self.run(gem_install_cmd + self._gems)
 
     def _bundle_install(self):
